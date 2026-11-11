@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>崗頂・雙舞台</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:"Kaiti SC","STKaiti",-apple-system,"PingFang TC",serif;touch-action:manipulation;-webkit-user-select:none;user-select:none}
+#game{position:absolute;inset:0;overflow:hidden}
+
+#bg{position:absolute;inset:0;background:url('bg_back.jpg') center/cover no-repeat;opacity:0;transition:opacity 1.2s ease}
+#bg.show{opacity:1}
+#bg::after{content:'';position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.3) 0%,transparent 32%,transparent 55%,rgba(0,0,0,.82) 100%)}
+
+#dualGlow{position:absolute;left:50%;top:42%;width:86%;height:40%;transform:translate(-50%,-50%);pointer-events:none;z-index:11;opacity:0;
+background:radial-gradient(ellipse at center,rgba(255,215,130,.45),rgba(255,215,130,0) 70%);border-radius:50%}
+#dualGlow.go{animation:dg 2s ease}
+@keyframes dg{0%{opacity:0}30%{opacity:1}100%{opacity:0}}
+
+#locLabel{position:absolute;top:calc(env(safe-area-inset-top,0px) + 18px);left:50%;transform:translateX(-50%);z-index:15;opacity:0;transition:opacity 1s ease .4s}
+#locLabel.show{opacity:1}
+#locLabel .t1{display:inline-block;padding:5px 18px;border:1px solid rgba(212,168,87,.5);border-radius:999px;background:rgba(20,16,12,.55);color:#e8c97e;font-size:13px;letter-spacing:3px}
+
+/* 對話框 */
+#dlgBox{position:absolute;bottom:calc(env(safe-area-inset-bottom,0px) + 16px);left:14px;right:14px;min-height:96px;background:rgba(28,24,20,.93);border:1px solid rgba(180,150,100,.35);border-radius:12px;padding:14px 18px 20px;z-index:20;opacity:0;transform:translateY(16px);transition:opacity .5s ease,transform .5s ease}
+#dlgBox.show{opacity:1;transform:translateY(0)}
+#dlgName{color:#a89880;font-size:12px;letter-spacing:3px;margin-bottom:7px}
+#dlgText{color:#e8dcc8;font-size:15.5px;line-height:1.8;min-height:52px}
+#dlgHint{position:absolute;right:14px;bottom:7px;color:#d4a857;font-size:14px;display:none;animation:hintBlink 1.2s ease-in-out infinite}
+@keyframes hintBlink{0%,100%{opacity:.3}50%{opacity:1}}
+
+/* 謎題卡 */
+#puzzleCard{position:absolute;left:50%;top:42%;transform:translate(-50%,-50%) scale(.94);width:88%;max-width:346px;max-height:76vh;overflow-y:auto;background:linear-gradient(160deg,#efe3c2,#e2d0a4);border:1px solid #b98f3e;border-radius:6px;box-shadow:0 10px 40px rgba(0,0,0,.65),inset 0 0 60px rgba(150,110,50,.18);z-index:25;padding:22px 20px 18px;opacity:0;pointer-events:none;transition:opacity .6s ease,transform .6s ease}
+#puzzleCard.show{opacity:1;transform:translate(-50%,-50%) scale(1);pointer-events:auto}
+.pz-tag{display:inline-block;font-size:10px;letter-spacing:3px;color:#8a6a2a;border:1px solid #b98f3e;border-radius:3px;padding:2px 8px;margin-bottom:12px}
+.pz-q{color:#4a3410;font-size:16.5px;line-height:1.8;margin-bottom:12px}
+.pz-hintbtn{display:inline-block;padding:5px 14px;margin-bottom:10px;background:transparent;border:1px dashed #b98f3e;border-radius:999px;color:#8a6a2a;font-size:12.5px;cursor:pointer;font-family:inherit;letter-spacing:1px}
+.pz-hintbtn:active{background:rgba(255,248,225,.6)}
+.pz-hint{color:#7a5a2a;font-size:12.5px;line-height:1.75;padding:10px 12px;background:rgba(255,248,225,.5);border-left:3px solid #b98f3e;border-radius:0 4px 4px 0;margin-bottom:14px}
+.pz-hint b{color:#8a3a20}
+.num-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.opt{padding:16px 10px;background:rgba(255,250,235,.65);border:1px solid #b98f3e;border-radius:6px;color:#4a3410;font-size:22px;text-align:center;cursor:pointer;font-family:inherit;font-weight:700;letter-spacing:2px}
+.opt small{display:block;font-size:11px;font-weight:400;color:#8a6a2a;margin-top:4px;letter-spacing:1px}
+.opt:active{background:#d9c694}
+.opt.wrong{animation:shake .4s ease;border-color:#a03a2a}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-7px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(3px)}}
+.pz-err{color:#a03a2a;font-size:12px;min-height:16px;margin-top:4px;text-align:center}
+
+/* FACTS UNLOCKED */
+#factsCard{position:absolute;left:50%;top:42%;transform:translate(-50%,-50%) scale(.94);width:88%;max-width:346px;max-height:78vh;overflow-y:auto;background:linear-gradient(160deg,#efe3c2,#e2d0a4);border:1px solid #b98f3e;border-radius:6px;box-shadow:0 10px 40px rgba(0,0,0,.65),inset 0 0 60px rgba(150,110,50,.18);z-index:26;padding:22px 20px 18px;opacity:0;pointer-events:none;transition:opacity .7s ease,transform .7s ease}
+#factsCard.show{opacity:1;transform:translate(-50%,-50%) scale(1);pointer-events:auto}
+.fc-tag{display:inline-block;font-size:10px;letter-spacing:3px;color:#fff;background:#8a5a20;border-radius:3px;padding:2px 8px;margin-bottom:12px}
+.fc-title{color:#6b4a1a;font-size:17px;letter-spacing:1px;line-height:1.5;margin-bottom:4px}
+.fc-sub{color:#8a6a2a;font-size:12px;letter-spacing:1px;margin-bottom:14px}
+.fc-zh{color:#4a3410;font-size:13.5px;line-height:1.9;margin-bottom:12px}
+.fc-div{border:0;border-top:1px dashed #b98f3e;margin:14px 0}
+.fc-btn{display:block;margin:14px auto 0;padding:9px 30px;background:#8a5a20;color:#f5e6c8;border:none;border-radius:999px;font-size:14px;letter-spacing:3px;cursor:pointer;font-family:inherit}
+</style>
+</head>
+<body>
+<div id="game">
+  <div id="bg"></div>
+  <div id="dualGlow"></div>
+
+  <div id="locLabel"><span class="t1">崗頂劇院・轉身</span></div>
+
+  <div id="dlgBox">
+    <div id="dlgName">旁　白</div>
+    <div id="dlgText"></div>
+    <div id="dlgHint">▼</div>
+  </div>
+
+  <div id="puzzleCard">
+    <span class="pz-tag">THE PUZZLE　謎題</span>
+    <div class="pz-q">站在觀眾席正中間，環顧整個廳——你能找到幾個舞台？</div>
+    <button class="pz-hintbtn" id="hintBtn">💡　提示</button>
+    <div class="pz-hint" id="hintBox" style="display:none">別只盯著正面那道紅幕。<b>左轉、右轉、向後轉</b>——舞台口不一定都朝同一個方向。</div>
+    <div class="num-grid">
+      <button class="opt" data-ans="0">0<small>個</small></button>
+      <button class="opt" data-ans="0">1<small>個</small></button>
+      <button class="opt" data-ans="1">2<small>個</small></button>
+      <button class="opt" data-ans="0">3<small>個</small></button>
+    </div>
+    <div class="pz-err" id="pzErr"></div>
+  </div>
+
+  <div id="factsCard">
+    <span class="fc-tag">FACTS UNLOCKED　解鎖知識</span>
+    <div class="fc-title">雙舞台俱樂部劇場</div>
+    <div class="fc-sub">白天歌劇，夜晚舞會</div>
+
+    <div class="fc-zh">這座劇院從來不只是劇場——它同時是<b>舞廳、閱書樓、桌球室</b>。1860 年落成時，它是葡人社群聚會的生活中心。</div>
+
+    <hr class="fc-div">
+
+    <div class="fc-zh">雙舞台設計，讓同一個房間白天演歌劇、夜晚辦舞會：觀眾席坐在中間，<b>兩頭都能開演</b>。這在全世界劇場裡都罕見。</div>
+
+    <hr class="fc-div">
+
+    <div class="fc-zh">粵語叫它「崗頂波樓」——「波」是葡語 <b>Bola（球）</b>的粵語音，說的就是這裡的桌球室。昔日葡人社群跳舞、讀書、打球，都在這屋簷下。</div>
+
+    <hr class="fc-div">
+
+    <div class="fc-zh">二戰時，雙舞台之間這片觀眾席，還住過從香港逃難而來的人。同一個房間，演過歌劇、辦過舞會、也收納過流離。</div>
+
+    <button class="fc-btn" onclick="closeFacts()">收入卷宗　▼</button>
+  </div>
+</div>
+
+<script>
+const LINE='再做一件事——站在這排紅椅子中間，轉個身。';
+const OUTRO=[
+  '崗頂劇院的三題，到這裡就齊了——門楣的 Dom、馬蹄的弧度、前後兩個舞台。',
+  '下一處——山坡上那座奶黃色的教堂，風訊堂。它的「風」，才是真正的謎。'
+];
+let typeTimer=null,phase=0,outroIdx=0;
+
+setTimeout(function(){
+  document.getElementById('bg').classList.add('show');
+  document.getElementById('locLabel').classList.add('show');
+},400);
+setTimeout(startDialog,1400);
+
+function startDialog(){
+  const el=document.getElementById('dlgText');
+  document.getElementById('dlgBox').classList.add('show');
+  el.textContent='';
+  playVoice('voice_gd4.wav');
+  let i=0;
+  typeTimer=setInterval(function(){
+    if(i<LINE.length){el.textContent+=LINE[i];i++;}
+    else{clearInterval(typeTimer);typeTimer=null;document.getElementById('dlgHint').style.display='block';}
+  },50);
+}
+
+let voice=null;
+function playVoice(src){
+  if(voice){voice.pause();voice=null;}
+  voice=new Audio();voice.src=src;voice.volume=1;
+  voice.play().catch(function(){});
+}
+function stopVoice(){if(voice){voice.pause();voice=null;}}
+
+function openPuzzle(){
+  phase=1;
+  document.getElementById('dlgBox').style.opacity='0';
+  document.getElementById('dlgBox').style.transform='translateY(16px)';
+  setTimeout(function(){document.getElementById('puzzleCard').classList.add('show');},400);
+}
+
+document.getElementById('hintBtn').addEventListener('click',function(){
+  const box=document.getElementById('hintBox');
+  box.style.display=box.style.display==='none'?'block':'none';
+});
+
+document.querySelectorAll('.opt').forEach(function(btn){
+  btn.addEventListener('click',function(){
+    if(btn.dataset.ans==='1'){
+      document.getElementById('puzzleCard').classList.remove('show');
+      document.getElementById('dualGlow').classList.add('go');
+      setTimeout(function(){document.getElementById('factsCard').classList.add('show');},700);
+    }else{
+      btn.classList.add('wrong');
+      setTimeout(function(){btn.classList.remove('wrong');},500);
+      document.getElementById('pzErr').textContent='再找找——別只看一頭。';
+    }
+  });
+});
+
+function closeFacts(){
+  document.getElementById('factsCard').classList.remove('show');
+  phase=2;outroIdx=0;
+  setTimeout(showOutro,300);
+}
+
+function showOutro(){
+  const el=document.getElementById('dlgText');
+  document.getElementById('dlgBox').style.opacity='1';
+  document.getElementById('dlgBox').style.transform='translateY(0)';
+  el.textContent='';
+  playVoice(['voice_gd5.wav','voice_gd6.wav'][outroIdx]);
+  let i=0;
+  typeTimer=setInterval(function(){
+    if(i<OUTRO[outroIdx].length){el.textContent+=OUTRO[outroIdx][i];i++;}
+    else{clearInterval(typeTimer);typeTimer=null;document.getElementById('dlgHint').style.display='block';}
+  },45);
+}
+
+document.addEventListener('pointerdown',function(){
+  if(typeTimer){
+    clearInterval(typeTimer);typeTimer=null;stopVoice();
+    if(phase===0)document.getElementById('dlgText').textContent=LINE;
+    else document.getElementById('dlgText').textContent=OUTRO[outroIdx];
+    document.getElementById('dlgHint').style.display='block';
+    return;
+  }
+  if(phase===0){openPuzzle();return;}
+  if(phase===2){
+    outroIdx++;
+    if(outroIdx<OUTRO.length){
+      showOutro();
+    }else{
+      document.getElementById('dlgHint').textContent='前往風訊堂　▼';
+    }
+  }
+});
+
+/* BGM：首次點擊後循環播放 */
+let bgm=null;
+document.addEventListener('pointerdown',function(){
+  if(bgm)return;
+  bgm=new Audio();bgm.src='bgm_theatre.wav';bgm.loop=true;bgm.volume=.3;
+  bgm.play().catch(function(){});
+});
+</script>
+</body>
+</html>

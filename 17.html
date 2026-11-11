@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>崗頂劇院・全程</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:"Kaiti SC","STKaiti",-apple-system,"PingFang TC",serif;touch-action:manipulation;-webkit-user-select:none;user-select:none}
+#game{position:fixed;inset:0;overflow:hidden}
+
+/* 三張背景：門楣 / 內廳舞台向 / 反向視角 */
+.bg{position:absolute;inset:0;background-size:cover;background-position:center;opacity:0;transition:opacity 1.2s ease}
+.bg::after{content:'';position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.3) 0%,transparent 30%,transparent 55%,rgba(0,0,0,.82) 100%)}
+#bg1{background-image:url('bg_theatre.jpg')}
+#bg2{background-image:url('bg_inside.jpg')}
+#bg3{background-image:url('bg_back.jpg')}
+.bg.show{opacity:1}
+
+#locLabel{position:absolute;top:calc(env(safe-area-inset-top,0px) + 18px);left:50%;transform:translateX(-50%);z-index:15;opacity:0;transition:opacity .8s ease}
+#locLabel.show{opacity:1}
+#locLabel .t1{display:inline-block;padding:5px 18px;border:1px solid rgba(212,168,87,.5);border-radius:999px;background:rgba(20,16,12,.55);color:#e8c97e;font-size:13px;letter-spacing:3px}
+
+/* 金光 */
+.glow{position:absolute;border-radius:50%;pointer-events:none;z-index:11;opacity:0;background:radial-gradient(circle,rgba(255,215,130,.7),rgba(255,215,130,0) 70%)}
+.glow.go{animation:gflash 1.6s ease}
+@keyframes gflash{0%{opacity:0}30%{opacity:1}100%{opacity:0}}
+
+/* 對話框 */
+#dlgBox{position:absolute;bottom:calc(env(safe-area-inset-bottom,0px) + 16px);left:14px;right:14px;min-height:96px;background:rgba(28,24,20,.93);border:1px solid rgba(180,150,100,.35);border-radius:12px;padding:14px 18px 20px;z-index:20;opacity:0;transform:translateY(16px);transition:opacity .5s ease,transform .5s ease}
+#dlgBox.show{opacity:1;transform:translateY(0)}
+#dlgName{color:#a89880;font-size:12px;letter-spacing:3px;margin-bottom:7px}
+#dlgText{color:#e8dcc8;font-size:15.5px;line-height:1.8;min-height:52px}
+#dlgHint{position:absolute;right:14px;bottom:7px;color:#d4a857;font-size:14px;display:none;animation:hintBlink 1.2s ease-in-out infinite}
+@keyframes hintBlink{0%,100%{opacity:.3}50%{opacity:1}}
+
+/* 謎題卡 */
+#puzzleCard{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%) scale(.94);width:88%;max-width:346px;max-height:76vh;overflow-y:auto;background:linear-gradient(160deg,#efe3c2,#e2d0a4);border:1px solid #b98f3e;border-radius:6px;box-shadow:0 10px 40px rgba(0,0,0,.65),inset 0 0 60px rgba(150,110,50,.18);z-index:25;padding:22px 20px 18px;opacity:0;pointer-events:none;transition:opacity .6s ease,transform .6s ease}
+#puzzleCard.show{opacity:1;transform:translate(-50%,-50%) scale(1);pointer-events:auto}
+.pz-tag{display:inline-block;font-size:10px;letter-spacing:3px;color:#8a6a2a;border:1px solid #b98f3e;border-radius:3px;padding:2px 8px;margin-bottom:12px}
+.pz-q{color:#4a3410;font-size:16.5px;line-height:1.8;margin-bottom:12px}
+.pz-line{text-align:center;color:#4a3410;font-size:20px;letter-spacing:2px;line-height:1.7;margin-bottom:14px}
+.pz-line .blank{display:inline-block;min-width:90px;border-bottom:2px solid #8a6a2a;color:#8a6a2a;text-align:center}
+.pz-input{width:100%;padding:10px 12px;background:rgba(255,250,235,.7);border:1px solid #b98f3e;border-radius:4px;font-size:16px;text-align:center;color:#4a3410;outline:none;font-family:inherit;letter-spacing:2px;margin-bottom:10px}
+.pz-btn{display:block;margin:12px auto 0;padding:9px 34px;background:#8a5a20;color:#f5e6c8;border:none;border-radius:999px;font-size:15px;letter-spacing:4px;cursor:pointer;font-family:inherit}
+.pz-hintbtn{display:inline-block;padding:5px 14px;margin-bottom:10px;background:transparent;border:1px dashed #b98f3e;border-radius:999px;color:#8a6a2a;font-size:12.5px;cursor:pointer;font-family:inherit;letter-spacing:1px}
+.pz-hint{color:#7a5a2a;font-size:12.5px;line-height:1.75;padding:10px 12px;background:rgba(255,248,225,.5);border-left:3px solid #b98f3e;border-radius:0 4px 4px 0;margin-bottom:14px}
+.opt{display:block;width:100%;padding:11px 14px;margin-bottom:8px;background:rgba(255,250,235,.65);border:1px solid #b98f3e;border-radius:6px;color:#4a3410;font-size:15px;text-align:left;cursor:pointer;font-family:inherit}
+.opt:active{background:#d9c694}
+.opt.wrong{animation:shake .4s ease;border-color:#a03a2a}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-7px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(3px)}}
+.num-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.num-grid .opt{text-align:center;font-size:22px;font-weight:700;padding:16px 10px}
+.num-grid .opt small{display:block;font-size:11px;font-weight:400;color:#8a6a2a;margin-top:4px;letter-spacing:1px}
+.pz-err{color:#a03a2a;font-size:12px;min-height:16px;margin-top:4px;text-align:center}
+
+/* 考據 / FACTS 卡 */
+#factsCard{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%) scale(.94);width:88%;max-width:346px;max-height:78vh;overflow-y:auto;background:linear-gradient(160deg,#efe3c2,#e2d0a4);border:1px solid #b98f3e;border-radius:6px;box-shadow:0 10px 40px rgba(0,0,0,.65),inset 0 0 60px rgba(150,110,50,.18);z-index:26;padding:22px 20px 18px;opacity:0;pointer-events:none;transition:opacity .7s ease,transform .7s ease}
+#factsCard.show{opacity:1;transform:translate(-50%,-50%) scale(1);pointer-events:auto}
+.fc-tag{display:inline-block;font-size:10px;letter-spacing:3px;color:#fff;background:#8a5a20;border-radius:3px;padding:2px 8px;margin-bottom:12px}
+.fc-title{color:#6b4a1a;font-size:17px;letter-spacing:1px;line-height:1.5;margin-bottom:4px}
+.fc-sub{color:#8a6a2a;font-size:12px;letter-spacing:1px;margin-bottom:14px}
+.fc-zh{color:#4a3410;font-size:13.5px;line-height:1.9;margin-bottom:12px}
+.fc-div{border:0;border-top:1px dashed #b98f3e;margin:14px 0}
+.fc-btn{display:block;margin:14px auto 0;padding:9px 30px;background:#8a5a20;color:#f5e6c8;border:none;border-radius:999px;font-size:14px;letter-spacing:3px;cursor:pointer;font-family:inherit}
+</style>
+</head>
+<body>
+<div id="game">
+  <div id="bg1" class="bg"></div>
+  <div id="bg2" class="bg"></div>
+  <div id="bg3" class="bg"></div>
+
+  <div class="glow" id="glow1" style="left:50%;top:17%;width:120px;height:120px;margin:-60px 0 0 -60px"></div>
+  <div class="glow" id="glow2" style="left:50%;top:42%;width:78%;height:26%;transform:translateX(-50%)"></div>
+  <div class="glow" id="glow3" style="left:50%;top:42%;width:86%;height:40%;transform:translateX(-50%)"></div>
+
+  <div id="locLabel"><span class="t1" id="locText">崗頂劇院・門楣</span></div>
+
+  <!-- 謎題卡（三套內容由 JS 切換） -->
+  <div id="puzzleCard"></div>
+
+  <!-- 考據 / FACTS 卡 -->
+  <div id="factsCard"></div>
+
+  <!-- 旁白 -->
+  <div id="dlgBox">
+    <div id="dlgName">旁　白</div>
+    <div id="dlgText"></div>
+    <div id="dlgHint">▼</div>
+  </div>
+</div>
+
+<script>
+/* ============ 台詞 ============ */
+const LINES=[
+  '在中央的捲軸上，寫著「Dom」。然而 Dom 不是名字，而是王族的尊稱。那麼，這座劇院是要獻給哪位王室呢？',
+  '推開大門——先別急著走。抬頭看看這環抱你的空間。',
+  '再做一件事——站在這排紅椅子中間，轉個身。'
+];
+const OUTRO=[
+  '崗頂劇院的三題，到這裡就齊了——門楣的 Dom、馬蹄的弧度、前後兩個舞台。',
+  '下一處——山坡上那座奶黃色的教堂，風訊堂。'
+];
+const LOCS=['崗頂劇院・門楣','崗頂劇院・內廳','崗頂劇院・轉身'];
+
+/* ============ 謎題模板 ============ */
+const PUZ=[
+  /* Q1 輸入 */
+  `<span class="pz-tag">THE PUZZLE　謎題</span>
+   <div class="pz-line">Theatro Dom <span class="blank">＿＿＿＿</span></div>
+   <input class="pz-input" id="pzInput" type="text" placeholder="國王的名字" autocomplete="off">
+   <button class="pz-btn" id="pzBtn">確 認</button>
+   <div style="text-align:center;color:#8a6a40;font-size:12px;margin-top:10px">看看捲軸，那裡記載了答案</div>
+   <div class="pz-err" id="pzErr"></div>`,
+  /* Q2 形狀四選 */
+  `<span class="pz-tag">THE PUZZLE　謎題</span>
+   <div class="pz-q">抬頭看——這整座觀眾席，呈現甚麼形狀？</div>
+   <button class="pz-hintbtn" id="hintBtn">💡　提示</button>
+   <div class="pz-hint" id="hintBox" style="display:none">站在觀眾席中央，看那道白色鐵欄杆彎成甚麼弧——它是筆直的、整圈的，還是一彎？</div>
+   <button class="opt" data-ans="1">🐎　一彎弧形（馬蹄／月牙）</button>
+   <button class="opt" data-ans="0">⬜　長方形（筆直成排）</button>
+   <button class="opt" data-ans="0">⭕　正圓形（整整一圈）</button>
+   <button class="opt" data-ans="0">🪜　階梯形（逐層升高）</button>
+   <div class="pz-err" id="pzErr"></div>`,
+  /* Q3 數字四選 */
+  `<span class="pz-tag">THE PUZZLE　謎題</span>
+   <div class="pz-q">站在觀眾席正中間，環顧整個廳——你能找到幾個舞台？</div>
+   <button class="pz-hintbtn" id="hintBtn">💡　提示</button>
+   <div class="pz-hint" id="hintBox" style="display:none">別只盯著正面那道紅幕。<b>左轉、右轉、向後轉</b>——舞台口不一定都朝同一個方向。</div>
+   <div class="num-grid">
+     <button class="opt" data-ans="0">0<small>個</small></button>
+     <button class="opt" data-ans="0">1<small>個</small></button>
+     <button class="opt" data-ans="1">2<small>個</small></button>
+     <button class="opt" data-ans="0">3<small>個</small></button>
+   </div>
+   <div class="pz-err" id="pzErr"></div>`
+];
+
+/* ============ FACTS 模板 ============ */
+const FACTS=[
+  /* Q1 考據卡 */
+  `<span class="fc-tag">考據　REVEAL</span>
+   <div class="fc-title" style="text-align:center">PEDRO V　＝　伯多祿五世</div>
+   <div class="fc-sub" style="text-align:center">1837–1861</div>
+   <div class="fc-zh" style="text-align:center">他十六歲即位，是葡萄牙人眼中的開明賢王——黃熱病肆虐時親自走進疫區撫民；又鋪馬路、建自來水、興學校。</div>
+   <hr class="fc-div">
+   <div class="fc-zh" style="text-align:center">1860 年劇院落成，他 23 歲。次年（1861）傷寒暴發，他驟然離世，年僅 <b>24 歲</b>，無嗣而終。賀禮剛送到，人就沒了。</div>
+   <hr class="fc-div">
+   <div class="fc-zh" style="text-align:center">他只看過一年自己的劇院。</div>
+   <button class="fc-btn" onclick="nextStage()">進入劇院　▼</button>`,
+  /* Q2 馬蹄形 */
+  `<span class="fc-tag">FACTS UNLOCKED　解鎖知識</span>
+   <div class="fc-title">馬蹄形觀眾席</div>
+   <div class="fc-sub">意大利劇院的亞洲第一站</div>
+   <div class="fc-zh">這道月牙形觀眾席沿襲意大利式劇院（teatro all'italiana）——米蘭斯卡拉、那不勒斯聖卡洛、威尼斯鳳凰，都是這個樣子。</div>
+   <hr class="fc-div">
+   <div class="fc-zh">為甚麼要彎？<b>視線</b>——每個位子都直視舞台；<b>聲學</b>——弧形包廂牆把聲音均勻反射；<b>社交</b>——包廂彼此相對，觀眾也在互相觀看。</div>
+   <hr class="fc-div">
+   <div class="fc-zh">那缺掉的一半不是遺失——是主動留給舞台的。1860 年，這個歐洲藍圖第一次落在中國土地上，就在澳門。</div>
+   <button class="fc-btn" onclick="nextStage()">轉身看看　▼</button>`,
+  /* Q3 雙舞台 */
+  `<span class="fc-tag">FACTS UNLOCKED　解鎖知識</span>
+   <div class="fc-title">雙舞台俱樂部劇場</div>
+   <div class="fc-sub">白天歌劇，夜晚舞會</div>
+   <div class="fc-zh">這座劇院同時是<b>舞廳、閱書樓、桌球室</b>。1860 年落成時，它是葡人社群聚會的生活中心。</div>
+   <hr class="fc-div">
+   <div class="fc-zh">雙舞台設計讓同一個房間白天演歌劇、夜晚辦舞會：觀眾席坐在中間，<b>兩頭都能開演</b>。這在全世界劇場裡都罕見。</div>
+   <hr class="fc-div">
+   <div class="fc-zh">粵語叫它「崗頂波樓」——「波」是葡語 <b>Bola（球）</b>的粵語音，說的就是這裡的桌球室。二戰時，這片觀眾席還住過從香港逃難而來的人。</div>
+   <button class="fc-btn" onclick="nextStage()">收入卷宗　▼</button>`
+];
+
+/* ============ 狀態 ============ */
+let typeTimer=null,stage=0,outroIdx=0;
+
+/* 開場 */
+setTimeout(function(){
+  document.getElementById('bg1').classList.add('show');
+  document.getElementById('locLabel').classList.add('show');
+  document.getElementById('locText').textContent=LOCS[0];
+},400);
+setTimeout(startDialog,1400);
+
+function startDialog(){
+  const el=document.getElementById('dlgText');
+  document.getElementById('dlgBox').classList.add('show');
+  el.textContent='';
+  let i=0;
+  typeTimer=setInterval(function(){
+    if(i<LINES[stage].length){el.textContent+=LINES[stage][i];i++;}
+    else{clearInterval(typeTimer);typeTimer=null;document.getElementById('dlgHint').style.display='block';}
+  },50);
+}
+
+function openPuzzle(){
+  document.getElementById('dlgBox').classList.remove('show');
+  const card=document.getElementById('puzzleCard');
+  card.innerHTML=PUZ[stage];
+  setTimeout(function(){
+    card.classList.add('show');
+    bindPuzzle();
+  },400);
+}
+
+function bindPuzzle(){
+  const hb=document.getElementById('hintBtn');
+  if(hb)hb.addEventListener('click',function(){
+    const box=document.getElementById('hintBox');
+    box.style.display=box.style.display==='none'?'block':'none';
+  });
+
+  const btn=document.getElementById('pzBtn');
+  if(btn)btn.addEventListener('click',checkInput);
+
+  const inp=document.getElementById('pzInput');
+  if(inp)inp.addEventListener('keydown',function(e){if(e.key==='Enter')checkInput();});
+
+  document.querySelectorAll('#puzzleCard .opt').forEach(function(o){
+    o.addEventListener('click',function(){
+      if(o.dataset.ans==='1')solvePuzzle();
+      else{
+        o.classList.add('wrong');
+        setTimeout(function(){o.classList.remove('wrong');},500);
+        document.getElementById('pzErr').textContent='再看看現場——答案不在你以為的那一頭。';
+      }
+    });
+  });
+}
+
+function checkInput(){
+  const v=document.getElementById('pzInput').value.trim().toLowerCase().replace(/\s+/g,' ');
+  const ok=(v==='pedro v'||v==='pedro'||v==='伯多祿五世'||v==='伯多祿5世');
+  if(ok)solvePuzzle();
+  else{
+    document.getElementById('pzErr').textContent='DOM 是尊稱——那麼這座劇院，是獻給哪一位葡國國王？';
+  }
+}
+
+function solvePuzzle(){
+  document.getElementById('puzzleCard').classList.remove('show');
+  document.getElementById('glow'+(stage+1)).classList.add('go');
+  setTimeout(function(){
+    const fc=document.getElementById('factsCard');
+    fc.innerHTML=FACTS[stage];
+    fc.classList.add('show');
+  },700);
+}
+
+function nextStage(){
+  document.getElementById('factsCard').classList.remove('show');
+  stage++;
+  if(stage<3){
+    /* 切背景 */
+    document.querySelectorAll('.bg').forEach(function(b){b.classList.remove('show');});
+    document.getElementById('bg'+(stage+1)).classList.add('show');
+    document.getElementById('locText').textContent=LOCS[stage];
+    setTimeout(startDialog,600);
+  }else{
+    /* outro */
+    outroIdx=0;
+    startOutro();
+  }
+}
+
+function startOutro(){
+  const el=document.getElementById('dlgText');
+  document.getElementById('dlgBox').classList.add('show');
+  el.textContent='';
+  let i=0;
+  typeTimer=setInterval(function(){
+    if(i<OUTRO[outroIdx].length){el.textContent+=OUTRO[outroIdx][i];i++;}
+    else{clearInterval(typeTimer);typeTimer=null;document.getElementById('dlgHint').style.display='block';}
+  },45);
+}
+
+/* 點擊推進 */
+document.addEventListener('pointerdown',function(){
+  if(typeTimer){
+    clearInterval(typeTimer);typeTimer=null;
+    if(stage<3)document.getElementById('dlgText').textContent=LINES[stage];
+    else document.getElementById('dlgText').textContent=OUTRO[outroIdx];
+    document.getElementById('dlgHint').style.display='block';
+    return;
+  }
+  /* stage<3：對話框點掉 → 謎題 */
+  if(stage<3 && document.getElementById('dlgBox').classList.contains('show')
+     && !document.getElementById('puzzleCard').classList.contains('show')
+     && !document.getElementById('factsCard').classList.contains('show')){
+    openPuzzle();
+    return;
+  }
+  /* outro 推進 */
+  if(stage>=3){
+    outroIdx++;
+    if(outroIdx<OUTRO.length)startOutro();
+    else document.getElementById('dlgHint').textContent='前往風訊堂　▼';
+  }
+});
+
+/* BGM */
+let bgm=null;
+document.addEventListener('pointerdown',function(){
+  if(bgm)return;
+  bgm=new Audio();bgm.src='bgm_theatre.wav';bgm.loop=true;bgm.volume=.3;
+  bgm.play().catch(function(){});
+});
+</script>
+</body>
+</html>
